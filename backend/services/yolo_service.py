@@ -116,6 +116,7 @@ class YOLOService:
                 # Calculate box area for severity
                 box_area = (x2 - x1) * (y2 - y1)
                 severity = self.classify_severity(box_area, frame_area)
+                risk_score = round(box_area / frame_area, 4) if frame_area > 0 else 0.0
 
                 # Map class name
                 class_name = settings.CLASS_NAMES.get(class_id, f"class_{class_id}")
@@ -129,6 +130,7 @@ class YOLOService:
                     class_id=class_id,
                     class_name=class_name,
                     severity=severity,
+                    risk_score=risk_score,
                 ))
 
                 if confidence > max_confidence:

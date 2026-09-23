@@ -8,3 +8,4 @@ pymongo==4.8.0
 motor==3.5.0
 python-dotenv==1.0.1
 numpy>=1.24.0
+shapely==2.0.6

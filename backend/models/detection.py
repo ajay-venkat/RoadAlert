@@ -31,6 +31,7 @@ class BoundingBox(BaseModel):
     class_id: int
     class_name: str
     severity: Severity
+    risk_score: float = 0.0
 
 
 class DetectionRecord(BaseModel):
@@ -47,6 +48,11 @@ class DetectionRecord(BaseModel):
     status: DetectionStatus = DetectionStatus.REPORTED
     source: str = Field("upload", description="Source: upload, mobile, cctv")
     detection_count: int = 0
+    constituency_id: Optional[str] = None
+    constituency_name: Optional[str] = None
+    mla_contact: Optional[dict] = None
+    confirmation_count: int = 1
+    snapshot_url: str = ""
 
 
 class DetectionResponse(BaseModel):
@@ -62,6 +68,11 @@ class DetectionResponse(BaseModel):
     annotated_image_url: str
     status: DetectionStatus
     detection_count: int
+    constituency_id: Optional[str] = None
+    constituency_name: Optional[str] = None
+    mla_contact: Optional[dict] = None
+    confirmation_count: int = 1
+    snapshot_url: str = ""
 
 
 class DetectionListResponse(BaseModel):

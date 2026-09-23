@@ -40,6 +40,29 @@ class DatabaseService:
             await collection.create_index([("status", ASCENDING)])
             logger.info("✅ Database indexes created")
 
+            # Seed mla_directory
+            mla_count = await self.db.mla_directory.count_documents({})
+            if mla_count == 0:
+                await self.db.mla_directory.insert_many([
+                    {
+                        "constituency_id": "TN-011",
+                        "constituency_name": "Dr. Radhakrishnan Nagar",
+                        "mla_name": "J. J. Ebenezer",
+                        "party": "DMK",
+                        "contact_email": "mla.tn011@example.com",
+                        "contact_phone": "+91-9876543210"
+                    },
+                    {
+                        "constituency_id": "TN-012",
+                        "constituency_name": "Perambur",
+                        "mla_name": "R. D. Sekar",
+                        "party": "DMK",
+                        "contact_email": "mla.tn012@example.com",
+                        "contact_phone": "+91-9876543211"
+                    }
+                ])
+                logger.info("✅ Seeded mla_directory")
+
         except Exception as e:
             logger.error(f"❌ MongoDB connection failed: {e}")
             raise
@@ -76,6 +99,7 @@ class DatabaseService:
         status: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
+        constituency_id: Optional[str] = None,
         skip: int = 0,
         limit: int = 50,
     ) -> Dict:
@@ -86,6 +110,8 @@ class DatabaseService:
             query["overall_severity"] = severity
         if status:
             query["status"] = status
+        if constituency_id:
+            query["constituency_id"] = constituency_id
         if start_date or end_date:
             ts_query = {}
             if start_date:
@@ -123,6 +149,47 @@ class DatabaseService:
         if result:
             result.pop("_id", None)
         return result
+
+    async def find_recent_nearby_detection(
+        self, lat: float, lon: float, max_distance: float = 25, time_window_minutes: int = 15
+    ) -> Optional[dict]:
+        """Find an unresolved detection within max_distance meters and recent time window."""
+        time_threshold = datetime.utcnow() - timedelta(minutes=time_window_minutes)
+        query = {
+            "status": {"$in": ["reported", "in_progress"]},
+            "timestamp": {"$gte": time_threshold},
+            "location": {
+                "$nearSphere": {
+                    "$geometry": {
+                        "type": "Point",
+                        "coordinates": [lon, lat],
+                    },
+                    "$maxDistance": max_distance,
+                }
+            }
+        }
+        doc = await self.db.detections.find_one(query)
+        if doc:
+            doc.pop("_id", None)
+        return doc
+        
+    async def increment_confirmation_count(self, detection_id: str) -> Optional[dict]:
+        """Increment the confirmation count of an existing detection."""
+        result = await self.db.detections.find_one_and_update(
+            {"id": detection_id},
+            {"$inc": {"confirmation_count": 1}, "$set": {"updated_at": datetime.utcnow()}},
+            return_document=True
+        )
+        if result:
+            result.pop("_id", None)
+        return result
+        
+    async def get_mla_contact(self, constituency_id: str) -> Optional[dict]:
+        """Get MLA details for a constituency."""
+        doc = await self.db.mla_directory.find_one({"constituency_id": constituency_id})
+        if doc:
+            doc.pop("_id", None)
+        return doc
 
     async def find_nearby(
         self, lat: float, lon: float, radius_meters: float = 500, limit: int = 50

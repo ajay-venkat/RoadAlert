@@ -2,54 +2,46 @@
    RoadWatch AI — Premium Dark Theme Design System
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@500;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 /* ─── CSS Custom Properties ──────────────────────────────────── */
 :root {
-  /* Background layers */
-  --bg-primary: #060a14;
-  --bg-secondary: #0c1222;
-  --bg-card: rgba(15, 23, 42, 0.75);
-  --bg-card-hover: rgba(20, 30, 52, 0.85);
-  --bg-glass: rgba(15, 23, 42, 0.55);
-  --bg-glass-border: rgba(99, 102, 241, 0.15);
-  --bg-input: rgba(15, 23, 42, 0.6);
+  /* Background layers - Light Theme (Signal White) */
+  --bg-primary: #F5F0E8;
+  --bg-secondary: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F9F9F9;
+  --bg-glass: rgba(245, 240, 232, 0.85);
+  --bg-glass-border: rgba(28, 30, 34, 0.1);
+  --bg-input: #FFFFFF;
 
-  /* Text */
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-accent: #a5b4fc;
+  /* Text - Asphalt */
+  --text-primary: #1C1E22;
+  --text-secondary: #5B6470;
+  --text-muted: #8E98A8;
+  --text-accent: #1C1E22;
 
   /* Accent gradient */
-  --gradient-primary: linear-gradient(135deg, #6366f1, #06b6d4);
-  --gradient-primary-hover: linear-gradient(135deg, #818cf8, #22d3ee);
-  --gradient-warm: linear-gradient(135deg, #f59e0b, #ef4444);
-  --gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.1));
-
-  /* Severity Colors */
-  --severity-minor: #22c55e;
-  --severity-minor-bg: rgba(34, 197, 94, 0.12);
-  --severity-moderate: #f59e0b;
-  --severity-moderate-bg: rgba(245, 158, 11, 0.12);
-  --severity-severe: #ef4444;
-  --severity-severe-bg: rgba(239, 68, 68, 0.12);
+  --gradient-primary: linear-gradient(135deg, #F4C430, #E6552E);
+  --gradient-primary-hover: linear-gradient(135deg, #F6D365, #FDA085);
+  --gradient-warm: linear-gradient(135deg, #E6552E, #C83C1A);
+  --gradient-subtle: linear-gradient(135deg, rgba(244, 196, 48, 0.1), rgba(230, 85, 46, 0.1));
 
   /* Status Colors */
-  --status-reported: #6366f1;
-  --status-reported-bg: rgba(99, 102, 241, 0.12);
-  --status-in-progress: #f59e0b;
-  --status-in-progress-bg: rgba(245, 158, 11, 0.12);
-  --status-fixed: #22c55e;
-  --status-fixed-bg: rgba(34, 197, 94, 0.12);
+  --status-reported: #E6552E;
+  --status-reported-bg: rgba(230, 85, 46, 0.12);
+  --status-in-progress: #F4C430;
+  --status-in-progress-bg: rgba(244, 196, 48, 0.12);
+  --status-fixed: #4C8B6B;
+  --status-fixed-bg: rgba(76, 139, 107, 0.12);
 
   /* Borders & Shadows */
-  --border-color: rgba(99, 102, 241, 0.12);
-  --border-color-hover: rgba(99, 102, 241, 0.3);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+  --border-color: rgba(28, 30, 34, 0.12);
+  --border-color-hover: rgba(28, 30, 34, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --shadow-glow: 0 0 20px rgba(244, 196, 48, 0.2);
 
   /* Spacing */
   --radius-sm: 8px;
@@ -219,6 +211,129 @@ body::before {
   border-color: var(--border-color-hover);
   box-shadow: var(--shadow-md);
 }
+
+.map-container {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+  background: var(--bg-secondary);
+}
+
+.dark-map-tiles {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* ─── Navigation Panel ───────────────────────────────────────── */
+.navigation-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  width: 320px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+}
+
+.nav-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nav-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.nav-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.input-group input {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+}
+
+.input-group input:focus {
+  border-color: var(--primary);
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-btn.primary {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.nav-btn.secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Fix routing machine default styles for dark mode */
+.leaflet-routing-container {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+  border-radius: 8px !important;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.leaflet-routing-alt, .leaflet-routing-geocoders {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.leaflet-routing-alt h2 {
+  color: var(--text-primary) !important;
+}
+
+.leaflet-routing-alt h3 {
+  color: var(--text-secondary) !important;
+}
+
+.leaflet-routing-alt tr:hover {
+  background-color: var(--bg-secondary) !important;
+}
+
 
 /* ─── Sidebar ────────────────────────────────────────────────── */
 .sidebar {

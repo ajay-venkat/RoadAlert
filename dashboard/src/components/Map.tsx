@@ -11,6 +11,7 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Detection, getImageUrl } from "@/lib/api";
+import NavigationControl from "./NavigationControl";
 
 // ─── Custom marker icon factory ───────────────────────────────
 function createMarkerIcon(severity: string): L.DivIcon {
@@ -133,11 +134,15 @@ export default function MapView({
         zoomControl={true}
         style={{ width: "100%", height: "100%" }}
       >
-        {/* Dark-themed tile layer */}
+        {/* OpenStreetMap with a dark mode CSS filter to avoid API key requirements */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> | <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          className="dark-map-tiles"
         />
+
+        {/* Real-time Navigation Control */}
+        <NavigationControl />
 
         {/* Heatmap layer */}
         <HeatmapLayer detections={validDetections} />

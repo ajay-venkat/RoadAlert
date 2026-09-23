@@ -9,8 +9,10 @@ import logging
 from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
+import base64
+import json
 
-from fastapi import FastAPI, File, Form, Query, UploadFile, HTTPException
+from fastapi import FastAPI, File, Form, Query, UploadFile, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
@@ -27,6 +29,7 @@ from models.detection import (
 )
 from services.db_service import db_service
 from services.yolo_service import yolo_service
+from services.constituency_lookup import constituency_lookup
 
 # Configure logging
 logging.basicConfig(
@@ -82,6 +85,110 @@ async def health():
         "model_loaded": yolo_service.model is not None,
     }
 
+
+# ─── Live Web Detection (WebSocket) ────────────────────────────────────────
+
+@app.websocket("/ws/live-detect")
+async def live_detect_ws(websocket: WebSocket):
+    await websocket.accept()
+    logger.info("📡 Client connected to live-detect WS")
+    try:
+        while True:
+            data_str = await websocket.receive_text()
+            data = json.loads(data_str)
+            
+            b64_frame = data.get("frame")
+            if not b64_frame:
+                continue
+                
+            lat = data.get("lat")
+            lon = data.get("lng")
+            accuracy = data.get("accuracy")
+            timestamp = data.get("timestamp")
+            
+            # Decode base64 frame
+            try:
+                if "," in b64_frame:
+                    b64_frame = b64_frame.split(",")[1]
+                image_data = base64.b64decode(b64_frame)
+                image = Image.open(io.BytesIO(image_data)).convert("RGB")
+            except Exception as e:
+                logger.error(f"Failed to decode image: {e}")
+                continue
+
+            # Run inference
+            detections, max_confidence = yolo_service.run_inference(image)
+            overall_severity = yolo_service.get_overall_severity(detections)
+            
+            if detections and max_confidence >= settings.CONFIDENCE_THRESHOLD:
+                # We have a valid detection
+                # Deduplication logic
+                is_duplicate = False
+                existing = None
+                
+                if lat and lon:
+                    existing = await db_service.find_recent_nearby_detection(lat, lon, max_distance=25, time_window_minutes=15)
+                    if existing:
+                        is_duplicate = True
+                        await db_service.increment_confirmation_count(existing["id"])
+                        logger.info(f"🔄 Duplicate detection. Incremented count for {existing['id']}")
+                
+                if not is_duplicate:
+                    # Determine constituency
+                    const_info = constituency_lookup.lookup(lat, lon) if lat and lon else None
+                    
+                    detection_id = str(uuid.uuid4())[:12]
+                    
+                    # Save snapshot
+                    image_filename = f"live_{detection_id}.jpg"
+                    image_path = os.path.join(settings.UPLOAD_DIR, image_filename)
+                    image.save(image_path, "JPEG", quality=85)
+                    
+                    ts = datetime.utcnow()
+                    if timestamp:
+                        try:
+                            ts = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                        except ValueError:
+                            pass
+                            
+                    record = {
+                        "id": detection_id,
+                        "lat": lat,
+                        "lon": lon,
+                        "timestamp": ts,
+                        "detections": [d.model_dump() for d in detections],
+                        "overall_severity": overall_severity.value,
+                        "max_confidence": max_confidence,
+                        "image_url": f"/static/detections/{image_filename}",
+                        "annotated_image_url": "",
+                        "status": DetectionStatus.REPORTED.value,
+                        "source": "live_web",
+                        "detection_count": len(detections),
+                        "confirmation_count": 1,
+                    }
+                    
+                    if const_info:
+                        record["constituency_id"] = const_info["constituency_id"]
+                        record["constituency_name"] = const_info["constituency_name"]
+                        mla = await db_service.get_mla_contact(const_info["constituency_id"])
+                        if mla:
+                            record["mla_contact"] = mla
+                            
+                    await db_service.insert_detection(record)
+                    logger.info(f"✅ New live detection stored: {detection_id}")
+
+            # Send back the results for overlay
+            response = {
+                "boxes": [d.model_dump() for d in detections],
+                "severity": overall_severity.value,
+                "confidence": max_confidence,
+            }
+            await websocket.send_json(response)
+            
+    except WebSocketDisconnect:
+        logger.info("📡 Client disconnected from live-detect WS")
+    except Exception as e:
+        logger.error(f"❌ WS error: {e}")
 
 # ─── Detection Endpoint ────────────────────────────────────────────────────
 
@@ -244,6 +351,43 @@ async def find_nearby(
     results = await db_service.find_nearby(lat, lon, radius, limit)
     return {"count": len(results), "detections": results}
 
+
+# ─── Ticket System ──────────────────────────────────────────────────────────
+
+@app.get("/tickets", response_model=DetectionListResponse)
+async def list_tickets(
+    constituency_id: Optional[str] = Query(None, description="Filter by constituency_id"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """List tickets for the MLA Dashboard."""
+    result = await db_service.list_detections(
+        status=status,
+        constituency_id=constituency_id,
+        skip=skip,
+        limit=limit,
+    )
+    return result
+
+@app.patch("/tickets/{ticket_id}/status")
+async def update_ticket_status(ticket_id: str, body: StatusUpdate):
+    """Update ticket status."""
+    updated = await db_service.update_detection_status(ticket_id, body.status.value)
+    if not updated:
+        raise HTTPException(404, f"Ticket {ticket_id} not found")
+    return updated
+
+@app.get("/constituencies/lookup")
+async def lookup_constituency(
+    lat: float = Query(..., description="Latitude"),
+    lng: float = Query(..., description="Longitude")
+):
+    """Lookup constituency by coordinates."""
+    result = constituency_lookup.lookup(lat, lng)
+    if not result:
+        return {"constituency_id": None, "constituency_name": None}
+    return result
 
 # ─── Entry point ────────────────────────────────────────────────────────────
 

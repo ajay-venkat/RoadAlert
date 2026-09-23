@@ -195,3 +195,93 @@ Severity is determined by the bounding box area as a percentage of the total fra
 | 1 | D10 | Transverse Crack |
 | 2 | D20 | Alligator Crack |
 | 3 | D40 | Pothole |
+
+---
+
+## Live Web Detection (WebSocket)
+
+```
+WS /ws/live-detect
+```
+
+**Message Format (Client -> Server):**
+```json
+{
+  "frame": "data:image/jpeg;base64,...",
+  "lat": 13.12,
+  "lng": 80.27,
+  "accuracy": 5.0,
+  "timestamp": "2026-08-18T09:00:00Z"
+}
+```
+
+**Message Format (Server -> Client):**
+```json
+{
+  "boxes": [
+    {
+      "x1": 120.5,
+      "y1": 200.3,
+      "x2": 350.8,
+      "y2": 380.1,
+      "confidence": 0.87,
+      "class_id": 3,
+      "class_name": "D40",
+      "severity": "moderate"
+    }
+  ],
+  "severity": "moderate",
+  "confidence": 0.87
+}
+```
+
+---
+
+## MLA Ticket System
+
+### List Tickets
+
+```
+GET /tickets
+```
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `constituency_id` | string | — | Filter by constituency ID (e.g. TN-011) |
+| `status` | string | — | Filter by status (`reported`, `in_progress`, `fixed`) |
+| `skip` | int | 0 | Pagination offset |
+| `limit` | int | 50 | Max results |
+
+### Update Ticket Status
+
+```
+PATCH /tickets/{ticket_id}/status
+```
+
+**Body:**
+```json
+{
+  "status": "in_progress"
+}
+```
+
+### Lookup Constituency
+
+```
+GET /constituencies/lookup
+```
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `lat` | float | ✅ | Latitude |
+| `lng` | float | ✅ | Longitude |
+
+**Response:**
+```json
+{
+  "constituency_id": "TN-011",
+  "constituency_name": "Dr. Radhakrishnan Nagar"
+}
+```
