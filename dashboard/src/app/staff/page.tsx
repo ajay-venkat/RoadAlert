@@ -78,7 +78,7 @@ export default function StaffDashboard() {
                     <div style={{ color: '#94a3b8', fontSize: '14px', display: 'flex', gap: '15px' }}>
                       <span>Reported: {new Date(t.timestamp).toLocaleDateString()}</span>
                       <span>Severity: <strong style={{ textTransform: 'capitalize', color: t.overall_severity === 'severe' ? '#ef4444' : t.overall_severity === 'moderate' ? '#f97316' : '#22c55e' }}>{t.overall_severity}</strong></span>
-                      <span>Confirmations: {t.confirmation_count || 1}</span>
+                      <span>Confirmations: {(t as any).confirmation_count || 1}</span>
                     </div>
                   </div>
                   <div style={{ background: getStatusColor(t.status) + '20', color: getStatusColor(t.status), padding: '6px 12px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold', textTransform: 'capitalize' }}>
