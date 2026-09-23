@@ -1,11 +1,11 @@
 {
   "builds": [
     {
-      "src": "RoadAlert/dashboard/package.json",
+      "src": "dashboard/package.json",
       "use": "@vercel/next"
     }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/RoadAlert/dashboard/$1" }
+    { "src": "/(.*)", "dest": "/dashboard/$1" }
   ]
 }
